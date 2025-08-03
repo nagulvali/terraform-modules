@@ -1,0 +1,7 @@
+**/**/.idea
+**/**/*.tfstate
+**/**/*.tfstate.*
+**/**/.terraform
+**/**/.terraform.*.hcl
+!**/**/*.example.*.tfvars
+**/**/*.tfvars
