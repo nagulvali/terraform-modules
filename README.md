@@ -22,6 +22,7 @@ Available modules:
 
 - `aws/networking` — AWS VPC networking resources; see its README and TODO for
   the currently implemented scope.
+- `aws/route53` — Route53 hosted zones, records, and health checks
 
 ## Consuming a module
 
