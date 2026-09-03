@@ -22,6 +22,7 @@ Available modules:
 
 - `aws/networking` — AWS VPC networking resources; see its README and TODO for
   the currently implemented scope.
+- `aws/acm` — ACM certificates with optional Route53 DNS validation
 
 ## Consuming a module
 
