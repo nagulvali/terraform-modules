@@ -22,6 +22,7 @@ Available modules:
 
 - `aws/networking` — AWS VPC networking resources; see its README and TODO for
   the currently implemented scope.
+- `aws/workflows` — Step Functions state machines and activities
 
 ## Consuming a module
 
