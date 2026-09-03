@@ -1,177 +1,332 @@
 region = "ap-south-1"
+
 tags = {
-  Env = "test"
+  Env       = "test"
+  ManagedBy = "terraform"
 }
-vpc = {
-  create                               = true
-  cidr_block                           = "10.1.0.0/16"
-  instance_tenancy                     = "default"
-  enable_dns_support                   = true
-  enable_dns_hostnames                 = true
-  ipv4_ipam_pool_id                    = null
-  ipv4_netmask_length                  = null
-  enable_network_address_usage_metrics = false
-  tags = {
-    Name = "test-vpc"
+
+# ==============================================================================
+# VPCs - Multiple VPCs supported, use key to reference in downstream resources
+# ==============================================================================
+vpcs = {
+  main = {
+    cidr_block                           = "10.1.0.0/16"
+    instance_tenancy                     = "default"
+    enable_dns_support                   = true
+    enable_dns_hostnames                 = true
+    enable_network_address_usage_metrics = false
+    tags = {
+      Purpose = "primary-workloads"
+    }
+  }
+
+  shared-services = {
+    cidr_block           = "10.2.0.0/16"
+    enable_dns_support   = true
+    enable_dns_hostnames = true
+    tags = {
+      Purpose = "shared-services"
+    }
   }
 }
 
+# ==============================================================================
+# Subnets - Use vpc_ref_key to reference VPC by key
+# ==============================================================================
 subnets = {
-  # Public Subnets
-  public-ap-south-1a = {
+  # Main VPC - Public Subnets
+  main-public-1a = {
+    vpc_ref_key             = "main"
     cidr_block              = "10.1.0.0/24"
     availability_zone       = "ap-south-1a"
     map_public_ip_on_launch = true
     tags = {
-      Name = "public-ap-south-1a"
       Tier = "public"
     }
   }
 
-  public-ap-south-1b = {
+  main-public-1b = {
+    vpc_ref_key             = "main"
     cidr_block              = "10.1.1.0/24"
     availability_zone       = "ap-south-1b"
     map_public_ip_on_launch = true
     tags = {
-      Name = "public-ap-south-1b"
       Tier = "public"
     }
   }
 
-  public-ap-south-1c = {
+  main-public-1c = {
+    vpc_ref_key             = "main"
     cidr_block              = "10.1.2.0/24"
     availability_zone       = "ap-south-1c"
     map_public_ip_on_launch = true
     tags = {
-      Name = "public-ap-south-1c"
       Tier = "public"
     }
   }
 
-  # Private App Subnets
-  private-ap-south-1a = {
-    cidr_block              = "10.1.10.0/24"
-    availability_zone       = "ap-south-1a"
-    map_public_ip_on_launch = false
+  # Main VPC - Private App Subnets
+  main-private-1a = {
+    vpc_ref_key       = "main"
+    cidr_block        = "10.1.10.0/24"
+    availability_zone = "ap-south-1a"
     tags = {
-      Name = "private-ap-south-1a"
       Tier = "private"
     }
   }
 
-  private-ap-south-1b = {
-    cidr_block              = "10.1.11.0/24"
-    availability_zone       = "ap-south-1b"
-    map_public_ip_on_launch = false
+  main-private-1b = {
+    vpc_ref_key       = "main"
+    cidr_block        = "10.1.11.0/24"
+    availability_zone = "ap-south-1b"
     tags = {
-      Name = "private-ap-south-1b"
       Tier = "private"
     }
   }
 
-  private-ap-south-1c = {
-    cidr_block              = "10.1.12.0/24"
-    availability_zone       = "ap-south-1c"
-    map_public_ip_on_launch = false
+  main-private-1c = {
+    vpc_ref_key       = "main"
+    cidr_block        = "10.1.12.0/24"
+    availability_zone = "ap-south-1c"
     tags = {
-      Name = "private-ap-south-1c"
       Tier = "private"
     }
   }
 
-  # Database Subnets (no internet access)
-  db-ap-south-1a = {
-    cidr_block              = "10.1.20.0/24"
-    availability_zone       = "ap-south-1a"
-    map_public_ip_on_launch = false
+  # Main VPC - Database Subnets
+  main-db-1a = {
+    vpc_ref_key       = "main"
+    cidr_block        = "10.1.20.0/24"
+    availability_zone = "ap-south-1a"
     tags = {
-      Name = "db-ap-south-1a"
       Tier = "database"
     }
   }
 
-  db-ap-south-1b = {
-    cidr_block              = "10.1.21.0/24"
-    availability_zone       = "ap-south-1b"
-    map_public_ip_on_launch = false
+  main-db-1b = {
+    vpc_ref_key       = "main"
+    cidr_block        = "10.1.21.0/24"
+    availability_zone = "ap-south-1b"
     tags = {
-      Name = "db-ap-south-1b"
       Tier = "database"
     }
   }
 
-  db-ap-south-1c = {
-    cidr_block              = "10.1.22.0/24"
-    availability_zone       = "ap-south-1c"
-    map_public_ip_on_launch = false
+  main-db-1c = {
+    vpc_ref_key       = "main"
+    cidr_block        = "10.1.22.0/24"
+    availability_zone = "ap-south-1c"
     tags = {
-      Name = "db-ap-south-1c"
       Tier = "database"
+    }
+  }
+
+  # Shared Services VPC - Subnets
+  shared-private-1a = {
+    vpc_ref_key       = "shared-services"
+    cidr_block        = "10.2.0.0/24"
+    availability_zone = "ap-south-1a"
+    tags = {
+      Tier = "private"
+    }
+  }
+
+  shared-private-1b = {
+    vpc_ref_key       = "shared-services"
+    cidr_block        = "10.2.1.0/24"
+    availability_zone = "ap-south-1b"
+    tags = {
+      Tier = "private"
     }
   }
 }
 
-igw = {
-  create = true
-  vpc_id = null # Set to null if VPC is created in the same module
-  # tags = {
-  #   Name = "test-igw"
-  # }
+# ==============================================================================
+# Internet Gateways - Use vpc_ref_key to reference VPC by key
+# ==============================================================================
+internet_gateways = {
+  main-igw = {
+    vpc_ref_key = "main"
+    tags = {
+      Purpose = "internet-access"
+    }
+  }
 }
 
-nacl = {}
+# ==============================================================================
+# Elastic IPs - For NAT Gateways
+# ==============================================================================
+elastic_ips = {
+  nat-eip-1a = {
+    tags = {
+      Purpose = "nat-gateway"
+    }
+  }
 
-sgs = {}
+  nat-eip-1b = {
+    tags = {
+      Purpose = "nat-gateway"
+    }
+  }
+}
 
-nat_gateways = {}
+# ==============================================================================
+# NAT Gateways - Use subnet_ref_key and eip_ref_key to reference by key
+# ==============================================================================
+nat_gateways = {
+  main-nat-1a = {
+    subnet_ref_key = "main-public-1a"
+    eip_ref_key    = "nat-eip-1a"
+    tags = {
+      AZ = "ap-south-1a"
+    }
+  }
 
-vpc_peerings = {}
+  main-nat-1b = {
+    subnet_ref_key = "main-public-1b"
+    eip_ref_key    = "nat-eip-1b"
+    tags = {
+      AZ = "ap-south-1b"
+    }
+  }
+}
 
-transit_gateway = {}
-
-vpn = {}
-
-endpoints = {}
-
-private_link = {}
-
-
+# ==============================================================================
+# Route Tables - Use vpc_ref_key, igw_ref_key, nat_gateway_ref_key, subnet_ref_key
+# ==============================================================================
 route_tables = {
-  public = {
-    vpc_id = null # Set to null if VPC is created in the same module
+  main-public = {
+    vpc_ref_key = "main"
     routes = [
       {
         destination_cidr_block = "0.0.0.0/0"
-        igw                    = true
+        igw_ref_key            = "main-igw"
       }
     ]
-    subnet_ref_keys = [
-      "public-ap-south-1a",
-      "public-ap-south-1b",
-      "public-ap-south-1c"
+    subnet_associations = [
+      { subnet_ref_key = "main-public-1a" },
+      { subnet_ref_key = "main-public-1b" },
+      { subnet_ref_key = "main-public-1c" }
     ]
-    subnet_ids = []
+    tags = {
+      Tier = "public"
+    }
   }
 
-  private = {
-    vpc_id = null # Set to null if VPC is created in the same module
-    routes = []
-    subnet_ref_keys = [
-      "private-ap-south-1a",
-      "private-ap-south-1b",
-      "private-ap-south-1c"
+  main-private-1a = {
+    vpc_ref_key = "main"
+    routes = [
+      {
+        destination_cidr_block = "0.0.0.0/0"
+        nat_gateway_ref_key    = "main-nat-1a"
+      }
     ]
-    subnet_ids = []
+    subnet_associations = [
+      { subnet_ref_key = "main-private-1a" },
+      { subnet_ref_key = "main-db-1a" }
+    ]
+    tags = {
+      Tier = "private"
+      AZ   = "ap-south-1a"
+    }
   }
 
-  db = {
-    vpc_id = null # Set to null if VPC is created in the same module
-    routes = []
-    subnet_ref_keys = [
-      "db-ap-south-1a",
-      "db-ap-south-1b",
-      "db-ap-south-1c"
+  main-private-1b = {
+    vpc_ref_key = "main"
+    routes = [
+      {
+        destination_cidr_block = "0.0.0.0/0"
+        nat_gateway_ref_key    = "main-nat-1b"
+      }
     ]
-    subnet_ids = []
+    subnet_associations = [
+      { subnet_ref_key = "main-private-1b" },
+      { subnet_ref_key = "main-db-1b" }
+    ]
+    tags = {
+      Tier = "private"
+      AZ   = "ap-south-1b"
+    }
   }
+
+  main-private-1c = {
+    vpc_ref_key = "main"
+    routes = [
+      {
+        destination_cidr_block = "0.0.0.0/0"
+        nat_gateway_ref_key    = "main-nat-1a"
+      }
+    ]
+    subnet_associations = [
+      { subnet_ref_key = "main-private-1c" },
+      { subnet_ref_key = "main-db-1c" }
+    ]
+    tags = {
+      Tier = "private"
+      AZ   = "ap-south-1c"
+    }
+  }
+
+  shared-private = {
+    vpc_ref_key = "shared-services"
+    routes      = []
+    subnet_associations = [
+      { subnet_ref_key = "shared-private-1a" },
+      { subnet_ref_key = "shared-private-1b" }
+    ]
+    tags = {
+      Tier = "private"
+    }
+  }
+}
+
+# ==============================================================================
+# VPC Endpoints - Use vpc_ref_key, subnet_ref_keys, route_table_ref_keys
+# ==============================================================================
+vpc_endpoints = {
+  main-s3 = {
+    vpc_ref_key       = "main"
+    service_name      = "com.amazonaws.ap-south-1.s3"
+    vpc_endpoint_type = "Gateway"
+    route_table_ref_keys = [
+      "main-public",
+      "main-private-1a",
+      "main-private-1b",
+      "main-private-1c"
+    ]
+    tags = {
+      Service = "s3"
+    }
+  }
+
+  main-dynamodb = {
+    vpc_ref_key       = "main"
+    service_name      = "com.amazonaws.ap-south-1.dynamodb"
+    vpc_endpoint_type = "Gateway"
+    route_table_ref_keys = [
+      "main-private-1a",
+      "main-private-1b",
+      "main-private-1c"
+    ]
+    tags = {
+      Service = "dynamodb"
+    }
+  }
+
+  # Example Interface endpoint (requires security groups in practice)
+  # main-ssm = {
+  #   vpc_ref_key         = "main"
+  #   service_name        = "com.amazonaws.ap-south-1.ssm"
+  #   vpc_endpoint_type   = "Interface"
+  #   private_dns_enabled = true
+  #   subnet_ref_keys = [
+  #     "main-private-1a",
+  #     "main-private-1b",
+  #     "main-private-1c"
+  #   ]
+  #   security_group_ids = ["sg-xxxxxxxx"]
+  #   tags = {
+  #     Service = "ssm"
+  #   }
+  # }
 }
