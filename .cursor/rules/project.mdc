@@ -1,0 +1,17 @@
+---
+description: Load the shared repository instructions for every Cursor session
+alwaysApply: true
+---
+
+# Shared repository guidance
+
+The provider-neutral `.ai/` directory is the source of truth.
+
+Before working in this repository, read and follow:
+
+- @.ai/instructions.md
+- @.ai/architecture.md
+- Relevant documents under `.ai/conventions/`
+- Relevant workflows under `.ai/skills/`
+
+Keep shared guidance in `.ai/`; this rule is only the Cursor adapter.
