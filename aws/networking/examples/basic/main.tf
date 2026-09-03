@@ -18,33 +18,50 @@ module "networking" {
 
   region = "us-east-1"
 
+  name_prefix = "acme"
+  name_suffix = "prod"
+
   tags = {
     Environment = "example"
     ManagedBy   = "Terraform"
   }
 
-  vpc = {
-    create               = true
-    cidr_block           = "10.0.0.0/16"
-    instance_tenancy     = "default"
-    enable_dns_support   = true
-    enable_dns_hostnames = true
-    tags = {
-      Name = "networking-example"
+  vpcs = {
+    main = {
+      cidr_block           = "10.0.0.0/16"
+      instance_tenancy     = "default"
+      enable_dns_support   = true
+      enable_dns_hostnames = true
     }
   }
 
   subnets = {
     public_a = {
+      vpc_ref_key             = "main"
       cidr_block              = "10.0.1.0/24"
       availability_zone       = "us-east-1a"
       map_public_ip_on_launch = true
     }
   }
 
-  igw = {
-    create = true
+  internet_gateways = {
+    main = {
+      vpc_ref_key = "main"
+    }
   }
 
-  route_tables = {}
+  route_tables = {
+    public = {
+      vpc_ref_key = "main"
+      routes = [
+        {
+          destination_cidr_block = "0.0.0.0/0"
+          igw_ref_key            = "main"
+        }
+      ]
+      subnet_associations = [
+        { subnet_ref_key = "public_a" }
+      ]
+    }
+  }
 }
