@@ -1,162 +1,81 @@
-# AWS Networking Module
+# AWS networking
 
-Terraform module for creating AWS networking resources with a consistent key-based reference pattern.
+Reusable AWS networking module for creating a VPC, subnets, an internet
+gateway, and route tables.
 
-## Design Pattern
+## Status
 
-This module uses a **key-based reference pattern** where:
-1. Resources are defined as maps keyed by name
-2. Downstream resources reference upstream resources using `*_ref_key` attributes
-3. This allows multiple VPCs and their associated resources to be managed together
-
-## Resources Supported
-
-| Resource | Variable | Reference Key |
-|----------|----------|---------------|
-| VPC | `vpcs` | Key used as `vpc_ref_key` |
-| Subnet | `subnets` | Key used as `subnet_ref_key` |
-| Internet Gateway | `internet_gateways` | Key used as `igw_ref_key` |
-| Elastic IP | `elastic_ips` | Key used as `eip_ref_key` |
-| NAT Gateway | `nat_gateways` | Key used as `nat_gateway_ref_key` |
-| Route Table | `route_tables` | Key used as `route_table_ref_keys` |
-| VPC Endpoint | `vpc_endpoints` | Key used as `vpc_endpoint_ref_key` |
+VPCs, subnets, internet gateways, and route-table resources are implemented.
+Route resources and route-table associations are currently incomplete and
+must not be assumed from the `route_tables.routes`, `subnet_ids`, or
+`subnet_ref_keys` inputs. See `TODO.md` for planned scope.
 
 ## Usage
 
 ```hcl
 module "networking" {
-  source = "./aws/networking"
+  source = "git::https://github.com/ORG/terraform-modules.git//aws/networking?ref=v1.0.0"
 
   region = "us-east-1"
 
-  tags = {
-    Environment = "production"
-    ManagedBy   = "terraform"
-  }
-
-  # Multiple VPCs
-  vpcs = {
-    main = {
-      cidr_block         = "10.0.0.0/16"
-      enable_dns_support = true
-    }
-    
-    secondary = {
-      cidr_block         = "10.1.0.0/16"
-      enable_dns_support = true
+  vpc = {
+    create               = true
+    cidr_block           = "10.0.0.0/16"
+    instance_tenancy     = "default"
+    enable_dns_support   = true
+    enable_dns_hostnames = true
+    tags = {
+      Name = "example"
     }
   }
 
-  # Subnets reference VPCs by key
   subnets = {
-    main-public-1a = {
-      vpc_ref_key             = "main"
-      cidr_block              = "10.0.0.0/24"
+    public_a = {
+      cidr_block              = "10.0.1.0/24"
       availability_zone       = "us-east-1a"
       map_public_ip_on_launch = true
     }
-    
-    main-private-1a = {
-      vpc_ref_key       = "main"
-      cidr_block        = "10.0.10.0/24"
-      availability_zone = "us-east-1a"
-    }
   }
 
-  # Internet Gateways reference VPCs by key
-  internet_gateways = {
-    main-igw = {
-      vpc_ref_key = "main"
-    }
+  igw = {
+    create = true
   }
 
-  # Elastic IPs for NAT Gateways
-  elastic_ips = {
-    nat-eip-1a = {}
-  }
-
-  # NAT Gateways reference subnets and EIPs by key
-  nat_gateways = {
-    main-nat-1a = {
-      subnet_ref_key = "main-public-1a"
-      eip_ref_key    = "nat-eip-1a"
-    }
-  }
-
-  # Route Tables with routes and associations
-  route_tables = {
-    main-public = {
-      vpc_ref_key = "main"
-      routes = [
-        {
-          destination_cidr_block = "0.0.0.0/0"
-          igw_ref_key            = "main-igw"
-        }
-      ]
-      subnet_associations = [
-        { subnet_ref_key = "main-public-1a" }
-      ]
-    }
-
-    main-private = {
-      vpc_ref_key = "main"
-      routes = [
-        {
-          destination_cidr_block = "0.0.0.0/0"
-          nat_gateway_ref_key    = "main-nat-1a"
-        }
-      ]
-      subnet_associations = [
-        { subnet_ref_key = "main-private-1a" }
-      ]
-    }
-  }
-
-  # VPC Endpoints
-  vpc_endpoints = {
-    s3 = {
-      vpc_ref_key          = "main"
-      service_name         = "com.amazonaws.us-east-1.s3"
-      vpc_endpoint_type    = "Gateway"
-      route_table_ref_keys = ["main-public", "main-private"]
-    }
-  }
+  route_tables = {}
 }
 ```
 
-## Reference Keys vs Direct IDs
+Pin production consumers to an immutable tag or commit SHA.
 
-Each resource supports both reference keys (for resources in this module) and direct IDs (for external resources):
+## Inputs
 
-| Resource | Ref Key Attribute | Direct ID Attribute |
-|----------|-------------------|---------------------|
-| VPC | `vpc_ref_key` | `vpc_id` |
-| Subnet | `subnet_ref_key` | `subnet_id` |
-| IGW | `igw_ref_key` | `gateway_id` |
-| EIP | `eip_ref_key` | `allocation_id` |
-| NAT Gateway | `nat_gateway_ref_key` | `nat_gateway_id` |
-| Route Table | `route_table_ref_keys` | `route_table_ids` |
-| VPC Endpoint | `vpc_endpoint_ref_key` | `vpc_endpoint_id` |
+- `region` (`string`, required): AWS region used by the module's current
+  provider configuration.
+- `tags` (`map(string)`, default `{}`): common resource tags.
+- `vpc` (`object`): VPC creation and configuration. Set `create = true` to
+  create a VPC, or provide `vpc_id` for an existing VPC.
+- `vpc_id` (`string`, default `null`): existing VPC ID used when the module
+  does not create one.
+- `subnets` (`map(object)`): subnets keyed by stable logical names. Pass `{}`
+  when no subnets are needed.
+- `igw` (`object`): internet-gateway creation and optional VPC selection.
+- `route_tables` (`map(object)`, default `{}`): route tables keyed by stable
+  names. Route and association fields are not yet implemented.
 
 ## Outputs
 
-| Output | Description |
-|--------|-------------|
-| `vpcs` | Map of all VPCs created |
-| `vpc_ids` | Map of VPC IDs by key |
-| `subnets` | Map of all subnets created |
-| `subnet_ids` | Map of subnet IDs by key |
-| `subnets_by_vpc` | Subnet IDs grouped by VPC key |
-| `internet_gateways` | Map of all IGWs created |
-| `elastic_ips` | Map of all EIPs created |
-| `nat_gateways` | Map of all NAT Gateways created |
-| `route_tables` | Map of all route tables created |
-| `vpc_endpoints` | Map of all VPC endpoints created |
+- `aws_vpc`: the created `aws_vpc.this` resource collection. It is empty when
+  the module uses an existing VPC.
 
-## Validation
+## Compatibility note
 
-The module includes built-in validation to ensure:
-- Each subnet specifies exactly one of `vpc_ref_key` or `vpc_id`
-- Each route table specifies exactly one of `vpc_ref_key` or `vpc_id`
-- Each NAT gateway specifies exactly one of `subnet_ref_key` or `subnet_id`
-- Public NAT gateways specify exactly one of `eip_ref_key` or `allocation_id`
+This module currently declares its own AWS provider configuration and accepts
+`region`. Reusable child modules should normally receive provider
+configurations from consumers. Moving provider ownership and removing
+`region` must be handled as a deliberate compatibility change.
+
+## Safety
+
+Review plans carefully for CIDR, subnet-key, and VPC changes because they may
+replace networking resources. Route resources and associations should be
+managed separately until their implementation is completed here.
