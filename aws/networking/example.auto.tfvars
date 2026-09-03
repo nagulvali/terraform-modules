@@ -1,5 +1,23 @@
 region = "ap-south-1"
 
+# ==============================================================================
+# Naming Convention
+# ==============================================================================
+# Pattern: {name_prefix}_{ref_key}_{name_suffix}
+# - If prefix exists: prefix is added
+# - If suffix exists: suffix is added  
+# - If neither exists: plain ref_key is used
+#
+# Example with prefix="acme" and suffix="prod":
+#   ref_key "main" becomes "acme_main_prod"
+#
+# Other modules reference by ref_key and fetch:
+#   - module.networking.vpc_ids["main"]     -> VPC ID
+#   - module.networking.vpc_names["main"]   -> "acme_main_prod"
+# ==============================================================================
+name_prefix = "acme"
+name_suffix = "prod"
+
 tags = {
   Env       = "test"
   ManagedBy = "terraform"

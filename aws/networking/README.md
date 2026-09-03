@@ -1,25 +1,61 @@
 # AWS Networking Module
 
-Terraform module for creating AWS networking resources with a consistent key-based reference pattern.
+Terraform module for creating AWS networking resources with a consistent key-based reference pattern and flexible naming convention.
 
 ## Design Pattern
 
 This module uses a **key-based reference pattern** where:
-1. Resources are defined as maps keyed by name
+1. Resources are defined as maps keyed by `ref_key`
 2. Downstream resources reference upstream resources using `*_ref_key` attributes
-3. This allows multiple VPCs and their associated resources to be managed together
+3. Resource names follow the pattern: `{name_prefix}_{ref_key}_{name_suffix}`
+4. Other modules reference by `ref_key` and fetch `name`, `id`, or other attributes
+
+## Naming Convention
+
+```
+Pattern: {name_prefix}_{ref_key}_{name_suffix}
+```
+
+| `name_prefix` | `name_suffix` | `ref_key` | Resulting Name |
+|---------------|---------------|-----------|----------------|
+| `"acme"` | `"prod"` | `"main"` | `acme_main_prod` |
+| `"acme"` | `null` | `"main"` | `acme_main` |
+| `null` | `"prod"` | `"main"` | `main_prod` |
+| `null` | `null` | `"main"` | `main` |
+
+### Cross-Module Reference Example
+
+```hcl
+# In networking module
+module "networking" {
+  source = "./aws/networking"
+  
+  name_prefix = "acme"
+  name_suffix = "prod"
+  
+  vpcs = {
+    main = { cidr_block = "10.0.0.0/16" }
+  }
+}
+
+# In another module - reference by ref_key, get computed name
+resource "aws_something" "example" {
+  vpc_id   = module.networking.vpc_ids["main"]      # Get ID by ref_key
+  vpc_name = module.networking.vpc_names["main"]    # "acme_main_prod"
+}
+```
 
 ## Resources Supported
 
-| Resource | Variable | Reference Key |
-|----------|----------|---------------|
-| VPC | `vpcs` | Key used as `vpc_ref_key` |
-| Subnet | `subnets` | Key used as `subnet_ref_key` |
-| Internet Gateway | `internet_gateways` | Key used as `igw_ref_key` |
-| Elastic IP | `elastic_ips` | Key used as `eip_ref_key` |
-| NAT Gateway | `nat_gateways` | Key used as `nat_gateway_ref_key` |
-| Route Table | `route_tables` | Key used as `route_table_ref_keys` |
-| VPC Endpoint | `vpc_endpoints` | Key used as `vpc_endpoint_ref_key` |
+| Resource | Variable | Reference Key | Name Output |
+|----------|----------|---------------|-------------|
+| VPC | `vpcs` | `vpc_ref_key` | `vpc_names` |
+| Subnet | `subnets` | `subnet_ref_key` | `subnet_names` |
+| Internet Gateway | `internet_gateways` | `igw_ref_key` | `internet_gateway_names` |
+| Elastic IP | `elastic_ips` | `eip_ref_key` | `elastic_ip_names` |
+| NAT Gateway | `nat_gateways` | `nat_gateway_ref_key` | `nat_gateway_names` |
+| Route Table | `route_tables` | `route_table_ref_keys` | `route_table_names` |
+| VPC Endpoint | `vpc_endpoints` | `vpc_endpoint_ref_key` | `vpc_endpoint_names` |
 
 ## Usage
 
@@ -29,12 +65,16 @@ module "networking" {
 
   region = "us-east-1"
 
+  # Naming convention
+  name_prefix = "mycompany"
+  name_suffix = "prod"
+
   tags = {
     Environment = "production"
     ManagedBy   = "terraform"
   }
 
-  # Multiple VPCs
+  # Multiple VPCs - use ref_key to reference downstream
   vpcs = {
     main = {
       cidr_block         = "10.0.0.0/16"
@@ -47,7 +87,7 @@ module "networking" {
     }
   }
 
-  # Subnets reference VPCs by key
+  # Subnets reference VPCs by ref_key
   subnets = {
     main-public-1a = {
       vpc_ref_key             = "main"
@@ -63,7 +103,7 @@ module "networking" {
     }
   }
 
-  # Internet Gateways reference VPCs by key
+  # Internet Gateways reference VPCs by ref_key
   internet_gateways = {
     main-igw = {
       vpc_ref_key = "main"
@@ -75,7 +115,7 @@ module "networking" {
     nat-eip-1a = {}
   }
 
-  # NAT Gateways reference subnets and EIPs by key
+  # NAT Gateways reference subnets and EIPs by ref_key
   nat_gateways = {
     main-nat-1a = {
       subnet_ref_key = "main-public-1a"
@@ -122,6 +162,15 @@ module "networking" {
     }
   }
 }
+
+# Access outputs by ref_key
+output "main_vpc_id" {
+  value = module.networking.vpc_ids["main"]
+}
+
+output "main_vpc_name" {
+  value = module.networking.vpc_names["main"]  # "mycompany_main_prod"
+}
 ```
 
 ## Reference Keys vs Direct IDs
@@ -140,18 +189,23 @@ Each resource supports both reference keys (for resources in this module) and di
 
 ## Outputs
 
+### Naming
 | Output | Description |
 |--------|-------------|
-| `vpcs` | Map of all VPCs created |
-| `vpc_ids` | Map of VPC IDs by key |
-| `subnets` | Map of all subnets created |
-| `subnet_ids` | Map of subnet IDs by key |
-| `subnets_by_vpc` | Subnet IDs grouped by VPC key |
-| `internet_gateways` | Map of all IGWs created |
-| `elastic_ips` | Map of all EIPs created |
-| `nat_gateways` | Map of all NAT Gateways created |
-| `route_tables` | Map of all route tables created |
-| `vpc_endpoints` | Map of all VPC endpoints created |
+| `name_prefix` | Name prefix used for all resources |
+| `name_suffix` | Name suffix used for all resources |
+
+### Resources (by ref_key)
+| Output | Description |
+|--------|-------------|
+| `vpcs` / `vpc_ids` / `vpc_names` | VPC resources, IDs, and computed names |
+| `subnets` / `subnet_ids` / `subnet_names` | Subnet resources, IDs, and computed names |
+| `internet_gateways` / `internet_gateway_ids` / `internet_gateway_names` | IGW resources, IDs, and computed names |
+| `elastic_ips` / `elastic_ip_ids` / `elastic_ip_names` | EIP resources, IDs, and computed names |
+| `nat_gateways` / `nat_gateway_ids` / `nat_gateway_names` | NAT Gateway resources, IDs, and computed names |
+| `route_tables` / `route_table_ids` / `route_table_names` | Route Table resources, IDs, and computed names |
+| `vpc_endpoints` / `vpc_endpoint_ids` / `vpc_endpoint_names` | VPC Endpoint resources, IDs, and computed names |
+| `subnets_by_vpc` | Subnet IDs grouped by VPC ref_key |
 
 ## Validation
 

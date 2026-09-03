@@ -1,4 +1,42 @@
 # ==============================================================================
+# Naming Convention
+# ==============================================================================
+locals {
+  # Build resource name based on prefix/suffix pattern
+  # Pattern: {name_prefix}_{key}_{name_suffix}
+  # If prefix exists: add it, if suffix exists: add it, if neither: plain key
+
+  # Pre-compute names for all resources (allows lookup by key)
+  vpc_names = {
+    for k, v in var.vpcs : k => join("_", compact([var.name_prefix, k, var.name_suffix]))
+  }
+
+  subnet_names = {
+    for k, v in var.subnets : k => join("_", compact([var.name_prefix, k, var.name_suffix]))
+  }
+
+  igw_names = {
+    for k, v in var.internet_gateways : k => join("_", compact([var.name_prefix, k, var.name_suffix]))
+  }
+
+  eip_names = {
+    for k, v in var.elastic_ips : k => join("_", compact([var.name_prefix, k, var.name_suffix]))
+  }
+
+  nat_gateway_names = {
+    for k, v in var.nat_gateways : k => join("_", compact([var.name_prefix, k, var.name_suffix]))
+  }
+
+  route_table_names = {
+    for k, v in var.route_tables : k => join("_", compact([var.name_prefix, k, var.name_suffix]))
+  }
+
+  vpc_endpoint_names = {
+    for k, v in var.vpc_endpoints : k => join("_", compact([var.name_prefix, k, var.name_suffix]))
+  }
+}
+
+# ==============================================================================
 # VPCs
 # ==============================================================================
 resource "aws_vpc" "this" {
@@ -13,7 +51,7 @@ resource "aws_vpc" "this" {
   enable_network_address_usage_metrics = each.value.enable_network_address_usage_metrics
 
   tags = merge(
-    { Name = each.key },
+    { Name = local.vpc_names[each.key] },
     each.value.tags,
     var.tags
   )
@@ -33,7 +71,7 @@ resource "aws_subnet" "this" {
   private_dns_hostname_type_on_launch = each.value.private_dns_hostname_type_on_launch
 
   tags = merge(
-    { Name = each.key },
+    { Name = local.subnet_names[each.key] },
     each.value.tags,
     var.tags
   )
@@ -48,7 +86,7 @@ resource "aws_internet_gateway" "this" {
   vpc_id = each.value.vpc_ref_key != null ? aws_vpc.this[each.value.vpc_ref_key].id : each.value.vpc_id
 
   tags = merge(
-    { Name = each.key },
+    { Name = local.igw_names[each.key] },
     each.value.tags,
     var.tags
   )
@@ -65,7 +103,7 @@ resource "aws_eip" "this" {
   network_border_group = each.value.network_border_group
 
   tags = merge(
-    { Name = each.key },
+    { Name = local.eip_names[each.key] },
     each.value.tags,
     var.tags
   )
@@ -86,7 +124,7 @@ resource "aws_nat_gateway" "this" {
   secondary_allocation_ids = each.value.secondary_allocation_ids
 
   tags = merge(
-    { Name = each.key },
+    { Name = local.nat_gateway_names[each.key] },
     each.value.tags,
     var.tags
   )
@@ -103,7 +141,7 @@ resource "aws_route_table" "this" {
   vpc_id = each.value.vpc_ref_key != null ? aws_vpc.this[each.value.vpc_ref_key].id : each.value.vpc_id
 
   tags = merge(
-    { Name = each.key },
+    { Name = local.route_table_names[each.key] },
     each.value.tags,
     var.tags
   )
@@ -218,7 +256,7 @@ resource "aws_vpc_endpoint" "this" {
   }
 
   tags = merge(
-    { Name = each.key },
+    { Name = local.vpc_endpoint_names[each.key] },
     each.value.tags,
     var.tags
   )

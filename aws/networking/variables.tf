@@ -10,6 +10,21 @@ variable "tags" {
 }
 
 # ------------------------------------------------------------------------------
+# Naming Convention
+# ------------------------------------------------------------------------------
+variable "name_prefix" {
+  description = "Prefix to prepend to all resource names. Pattern: {name_prefix}_{key}_{name_suffix}"
+  type        = string
+  default     = null
+}
+
+variable "name_suffix" {
+  description = "Suffix to append to all resource names. Pattern: {name_prefix}_{key}_{name_suffix}"
+  type        = string
+  default     = null
+}
+
+# ------------------------------------------------------------------------------
 # VPCs
 # ------------------------------------------------------------------------------
 variable "vpcs" {
