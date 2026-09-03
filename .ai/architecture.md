@@ -9,6 +9,7 @@ immutable repository versions.
 ```text
 aws/
   networking/
+  ebs/
     README.md
     main.tf
     variables.tf
@@ -18,9 +19,8 @@ aws/
     tests/
 ```
 
-The current AWS networking module manages VPC networking resources. As the
-repository grows, keep each independently consumable module in its own
-directory under the relevant provider.
+Each independently consumable AWS module lives in its own directory under
+`aws/`. Keep that layout as new module families are added.
 
 ## Module boundaries
 

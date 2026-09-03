@@ -20,8 +20,8 @@ documented interfaces.
 
 Available modules:
 
-- `aws/networking` — AWS VPC networking resources; see its README and TODO for
-  the currently implemented scope.
+- `aws/networking` — VPC networking resources
+- `aws/ebs` — EBS volumes, attachments, snapshots, and default encryption
 
 ## Consuming a module
 
